@@ -3,13 +3,14 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 // Enable CORS for all routes
 app.use(cors());
 
 // Express now includes built-in JSON parsing
 app.use(express.json());
+
 
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://sbabalola:Samuel2006@cluster0.xpc6u25.mongodb.net/dvei');
@@ -19,6 +20,24 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', () => {
     console.log('Connected to MongoDB');
 });
+
+const userSchema = new mongoose.Schema({
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
+    name: String,
+    role: { type: String, default: 'Student' },
+});
+
+userSchema.pre('save', async function (next) {
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 8);
+    }
+    next();
+});
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
@@ -78,5 +97,4 @@ app.post('/login', async (req, res) => {
 
 
 // Start the server
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
